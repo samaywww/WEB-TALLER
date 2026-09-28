@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Taller · Registro de fallas</title>
+<style>
+:root{--bg:#e6eaed;--panel:#fff;--ink:#1b252d;--mut:#586570;--line:#c6cfd6;--acc:#0e4a6b;--acc2:#e8f1f6;
+--leve:#2b7a4b;--moderada:#a86a0a;--grave:#c2410c;--critica:#991b1b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+header{background:var(--ink);color:#fff;padding:14px 16px 0}
+.top{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h1{margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.2px}
+nav[hidden]{display:none}
+#msg{color:var(--critica);font-weight:600;min-height:1.4em;margin:10px 0 0}
+nav{max-width:900px;margin:10px auto 0;display:flex;gap:4px}
+nav button{flex:1;max-width:220px;border:0;background:#33424d;color:#dfe6eb;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0}
+nav button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+main{max-width:900px;margin:0 auto;padding:16px}
+section[hidden]{display:none}
+fieldset{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin:0 0 14px;padding:14px 16px 16px}
+legend{font-weight:700;padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--mut);font-weight:600}
+input[type=text],input[type=tel],input[type=number],input[type=email],input[type=password],select,textarea{font:inherit;color:var(--ink);padding:9px 10px;border:1px solid #9aa7b1;border-radius:6px;background:#fff;width:100%}
+textarea{min-height:96px;resize:vertical}
+:focus-visible{outline:3px solid #f0a500;outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.chip span{display:inline-block;padding:8px 12px;border:1px solid #9aa7b1;border-radius:20px;background:#fff;font-size:.92rem}
+.chip input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip input:focus-visible+span{outline:3px solid #f0a500;outline-offset:1px}
+.sev{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.sev label{position:relative;display:block;border:2px solid var(--line);border-left-width:8px;border-radius:8px;padding:9px 12px;cursor:pointer;background:#fff}
+.sev input{position:absolute;opacity:0}
+.sev b{display:block}.sev small{color:var(--mut)}
+.sev label:has(input:checked){background:var(--acc2);border-color:currentColor}
+.sev label:has(input:focus-visible){outline:3px solid #f0a500}
+.s-leve{color:var(--leve)}.s-moderada{color:var(--moderada)}.s-grave{color:var(--grave)}.s-critica{color:var(--critica)}
+.sev b,.sev small{color:var(--ink)}.sev small{color:var(--mut)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:6px;padding:11px 18px;background:var(--acc);color:#fff;cursor:pointer}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid #9aa7b1;font-weight:600}
+.btn.del{background:#fff;color:var(--critica);border:1px solid var(--critica);font-weight:600}
+.btn.sm{padding:7px 12px;font-size:.9rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar select,.bar input{width:auto;flex:1;min-width:150px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:8px solid currentColor;border-radius:8px;margin-bottom:12px}
+.card summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.card summary::-webkit-details-marker{display:none}
+.card .pat{font-weight:800;font-size:1.1rem;color:var(--ink)}
+.card .veh{color:var(--ink)}
+.tag{font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:12px;background:currentColor}
+.tag i{font-style:normal;color:#fff}
+.est{font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:12px;background:#e3e8ec;color:var(--ink)}
+.est.Listo,.est.Entregado{background:#d5ecdd;color:#1d5c37}
+.meta{color:var(--mut);font-size:.85rem;margin-left:auto}
+.body{padding:0 14px 14px;color:var(--ink)}
+.body h3{font-size:1rem;margin:14px 0 6px}
+.body p{margin:4px 0;white-space:pre-wrap}
+.k{color:var(--mut);font-size:.85rem}
+.mec{background:#f3f6f8;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
+.mec h3{margin-top:0}
+.empty{text-align:center;color:var(--mut);padding:36px 10px}
+@media(max-width:560px){.meta{margin-left:0;width:100%}}
+@media print{header,.bar,.actions,.mec,.card:not(.print-me){display:none!important}body{background:#fffffffe}.card{border:1px solid #000}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Taller · Registro de fallas</h1><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
+  <nav role="tablist">
+    <button role="tab" id="t-new" aria-selected="true">Recepción</button>
+    <button role="tab" id="t-list" aria-selected="false">Órdenes <span id="cnt"></span></button>
+  </nav>
+</header>
+
+<main>
+<!-- INGRESO -->
+<section id="v-login" hidden>
+<form id="fLogin"><fieldset><legend>Ingresar</legend>
+  <div class="grid">
+    <label class="f">Correo<input type="email" name="email" required autocomplete="username"></label>
+    <label class="f">Contraseña<input type="password" name="pass" required autocomplete="current-password"></label>
+  </div>
+  <p id="msg" role="alert"></p>
+  <button class="btn" type="submit">Ingresar</button>
+</fieldset></form>
+</section>
+
+<!-- RECEPCIÓN -->
+<section id="v-new">
+<form id="form">
+  <fieldset>
+    <legend>Vehículo y chofer</legend>
+    <div class="grid">
+      <label class="f">Tipo de vehículo
+        <select name="tipo"><option>Camión</option><option>Auto</option><option>Camioneta</option><option>Grúa / auxilio</option><option>Otro</option></select></label>
+      <label class="f">Patente
+        <input type="text" name="patente" required autocapitalize="characters" maxlength="10" placeholder="AB123CD"></label>
+      <label class="f">Marca y modelo
+        <input type="text" name="vehiculo" placeholder="Ej.: Iveco Tector 170"></label>
+      <label class="f">Kilometraje
+        <input type="number" name="km" min="0" inputmode="numeric"></label>
+      <label class="f">Chofer / cliente
+        <input type="text" name="chofer"></label>
+      <label class="f">Teléfono
+        <input type="tel" name="tel"></label>
+      <label class="f">Cómo llegó
+        <select name="llegada"><option>Por su cuenta</option><option>Remolcado</option><option>Auxilio en ruta</option></select></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>¿Qué tan grave parece?</legend>
+    <div class="sev" id="sev"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sistema donde está la falla</legend>
+    <div class="chips" id="sis"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Qué se nota</legend>
+    <div class="chips" id="sint"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Lo que dice el chofer</legend>
+    <textarea name="relato" placeholder="Qué escucha, cuándo pasa, qué cree que tiene…"></textarea>
+  </fieldset>
+
+  <button class="btn" type="submit">Guardar recepción</button>
+  <button class="btn sec" type="reset" id="reset">Limpiar</button>
+</form>
+</section>
+
+<!-- ÓRDENES -->
+<section id="v-list" hidden>
+  <div class="bar">
+    <select id="fEst" aria-label="Filtrar por estado"><option value="">Todos los estados</option></select>
+    <select id="fGrav" aria-label="Filtrar por gravedad"><option value="">Toda gravedad</option></select>
+    <input type="text" id="fQ" placeholder="Buscar patente, chofer…" aria-label="Buscar">
+  </div>
+  <div class="bar">
+    <button class="btn sec sm" id="bCsv">Exportar a Excel (CSV)</button>
+    <button class="btn sec sm" id="bBak">Guardar copia</button>
+    <button class="btn sec sm" id="bRes">Restaurar copia</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+  <div id="list"></div>
+</section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const SIS=["Motor","Frenos","Caja / transmisión","Embrague","Suspensión y dirección","Eléctrico / batería","Refrigeración","Escape","Neumáticos","Carrocería","Hidráulico / equipo de grúa","Otro"];
+const SINT=["Ruido","Vibración","Humo","Pierde líquido","Luz en el tablero","Se calienta","Pierde fuerza","Olor a quemado","No arranca","Se apaga solo"];
+const GRAV=[["leve","Leve","Puede seguir andando"],["moderada","Moderada","Conviene revisarlo pronto"],["grave","Grave","No debería circular"],["critica","Crítica","Inmovilizado o riesgo de seguridad"]];
+const EST=["Pendiente","En revisión","Esperando repuestos","En reparación","Listo","Entregado"];
+const KEY="taller-ordenes-v1";
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const gname=v=>(GRAV.find(g=>g[0]===v)||[0,"Sin evaluar"])[1];
+const fmt=iso=>new Date(iso).toLocaleString("es-AR",{dateStyle:"short",timeStyle:"short"});
+
+/* ====== CONFIGURACIÓN DE FIREBASE: pegá acá los datos de tu proyecto ======
+   Mientras diga PEGAR_AQUI la página funciona en modo local (solo en este navegador). */
+const CFG = {
+  apiKey: "AIzaSyCXmPtLcV19_InMZMDeLVoivJhp_uzvHEE",
+  authDomain: "web-taller-a382c.firebaseapp.com",
+  projectId: "web-taller-a382c",
+  storageBucket: "web-taller-a382c.firebasestorage.app",
+  messagingSenderId: "684549661795",
+  appId: "1:684549661795:web:5fbf75d1c14afa5e5e0456"
+};
+/* ======================================================================= */
+const CLOUD=CFG.apiKey!=="web-taller-a382c-b4829";
+let orders=[],db=null,unsub=null;
+const fail=e=>alert("No se pudo guardar: "+(e.message||e));
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(orders))}catch(e){alert("No se pudo guardar en este navegador. Exportá una copia.")}};
+const DB=CLOUD?{
+  add:o=>db.collection("ordenes").doc(o.id).set(o).catch(fail),
+  update:o=>db.collection("ordenes").doc(o.id).set(o).catch(fail),
+  remove:o=>db.collection("ordenes").doc(o.id).delete().catch(fail),
+  async replace(list){
+    try{
+      const old=await db.collection("ordenes").get();
+      const ops=[...old.docs.map(d=>[d.ref,null]),...list.map(o=>[db.collection("ordenes").doc(o.id),o])];
+      for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(([r,o])=>o?b.set(r,o):b.delete(r));await b.commit()}
+    }catch(e){fail(e)}
+  }
+}:{
+  add:o=>{orders.unshift(o);persist();render()},
+  update:()=>{persist();render()},
+  remove:o=>{orders=orders.filter(x=>x!==o);persist();render()},
+  replace:l=>{orders=l;persist();render()}
+};
+
+const chips=(name,list)=>list.map(x=>`<label class="chip"><input type="checkbox" name="${name}" value="${esc(x)}"><span>${esc(x)}</span></label>`).join("");
+$("#sev").innerHTML=GRAV.map(g=>`<label class="s-${g[0]}"><input type="radio" name="gravedad" value="${g[0]}" required><b>${g[1]}</b><small>${g[2]}</small></label>`).join("");
+$("#sis").innerHTML=chips("sistemas",SIS);
+$("#sint").innerHTML=chips("sintomas",SINT);
+$("#fEst").innerHTML+=EST.map(e=>`<option>${e}</option>`).join("");
+$("#fGrav").innerHTML+=GRAV.map(g=>`<option value="${g[0]}">${g[1]}</option>`).join("");
+
+/* pestañas */
+function show(tab){
+  $("#v-new").hidden=tab!=="new";$("#v-list").hidden=tab!=="list";
+  $("#t-new").setAttribute("aria-selected",tab==="new");$("#t-list").setAttribute("aria-selected",tab==="list");
+  if(tab==="list")render();
+}
+$("#t-new").onclick=()=>show("new");$("#t-list").onclick=()=>show("list");
+
+/* nueva recepción */
+$("#form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const f=new FormData(e.target);
+  const n=orders.reduce((m,o)=>Math.max(m,o.n),0)+1;
+  const o={
+    id:Date.now().toString(36),n,fecha:new Date().toISOString(),
+    tipo:f.get("tipo"),patente:f.get("patente").trim().toUpperCase(),vehiculo:f.get("vehiculo").trim(),
+    km:f.get("km"),chofer:f.get("chofer").trim(),tel:f.get("tel").trim(),llegada:f.get("llegada"),
+    gravedad:f.get("gravedad"),sistemas:f.getAll("sistemas"),sintomas:f.getAll("sintomas"),
+    relato:f.get("relato").trim(),estado:"Pendiente",mec:null
+  };
+  open.add(o.id);DB.add(o);e.target.reset();show("list");
+});
+
+/* listado */
+const open=new Set();
+function render(){
+  $("#cnt").textContent=orders.length?`(${orders.length})`:"";
+  const st=$("#fEst").value,gr=$("#fGrav").value,q=$("#fQ").value.trim().toLowerCase();
+  const rows=orders.filter(o=>(!st||o.estado===st)&&(!gr||o.gravedad===gr)&&
+    (!q||[o.patente,o.chofer,o.vehiculo].join(" ").toLowerCase().includes(q)));
+  $("#list").innerHTML=rows.length?rows.map(card).join(""):`<p class="empty">${orders.length?"Ninguna orden coincide con el filtro.":"Todavía no hay órdenes. Cargá la primera en Recepción."}</p>`;
+}
+function card(o){
+  const m=o.mec||{};
+  const sis=o.sistemas.join(", ")||"—",sint=o.sintomas.join(", ")||"—";
+  return `<details class="card s-${o.gravedad}" data-id="${o.id}" ${open.has(o.id)?"open":""}>
+  <summary>
+    <span class="pat">${esc(o.patente)}</span><span class="veh">${esc(o.tipo)}${o.vehiculo?" · "+esc(o.vehiculo):""}</span>
+    <span class="tag"><i>${gname(o.gravedad)}</i></span><span class="est ${o.estado.split(" ")[0]}">${esc(o.estado)}</span>
+    <span class="meta">N.º ${String(o.n).padStart(4,"0")} · ${fmt(o.fecha)}</span>
+  </summary>
+  <div class="body">
+    <h3>Recepción</h3>
+    <p><span class="k">Chofer:</span> ${esc(o.chofer)||"—"} ${o.tel?"("+esc(o.tel)+")":""} &nbsp; <span class="k">Llegó:</span> ${esc(o.llegada)} ${o.km?`&nbsp; <span class="k">Km:</span> ${esc(o.km)}`:""}</p>
+    <p><span class="k">Sistema:</span> ${esc(sis)}</p>
+    <p><span class="k">Se nota:</span> ${esc(sint)}</p>
+    <p><span class="k">Dice el chofer:</span> ${esc(o.relato)||"—"}</p>
+    ${o.mec?`<h3>Diagnóstico del mecánico</h3>
+    <p><span class="k">Mecánico:</span> ${esc(m.nombre)||"—"} &nbsp; <span class="k">Gravedad real:</span> ${gname(m.gravedad)} &nbsp; <span class="k">Coincide con el chofer:</span> ${esc(m.coincide)||"—"}</p>
+    <p><span class="k">Sistema afectado:</span> ${esc((m.sistemas||[]).join(", "))||"—"}</p>
+    <p><span class="k">Diagnóstico:</span> ${esc(m.diag)||"—"}</p>
+    <p><span class="k">Repuestos:</span> ${esc(m.repuestos)||"—"} &nbsp; <span class="k">Tiempo estimado:</span> ${esc(m.tiempo)||"—"}</p>`:""}
+    <div class="mec">
+      <h3>${o.mec?"Actualizar diagnóstico":"Diagnóstico del mecánico"}</h3>
+      <div class="grid">
+        <label class="f">Mecánico<input type="text" data-f="nombre" value="${esc(m.nombre)}"></label>
+        <label class="f">Gravedad real<select data-f="gravedad"><option value="">Sin evaluar</option>${GRAV.map(g=>`<option value="${g[0]}" ${m.gravedad===g[0]?"selected":""}>${g[1]}</option>`).join("")}</select></label>
+        <label class="f">¿Coincide con lo que dijo el chofer?<select data-f="coincide">${["","Sí","En parte","No"].map(v=>`<option ${m.coincide===v?"selected":""}>${v}</option>`).join("")}</select></label>
+        <label class="f">Estado<select data-f="estado">${EST.map(e=>`<option ${o.estado===e?"selected":""}>${e}</option>`).join("")}</select></label>
+      </div>
+      <p class="k" style="margin:12px 0 6px">Sistema afectado (real)</p>
+      <div class="chips">${SIS.map(s=>`<label class="chip"><input type="checkbox" data-s value="${esc(s)}" ${(m.sistemas||[]).includes(s)?"checked":""}><span>${esc(s)}</span></label>`).join("")}</div>
+      <label class="f" style="margin-top:12px">Diagnóstico<textarea data-f="diag">${esc(m.diag)}</textarea></label>
+      <div class="grid" style="margin-top:12px">
+        <label class="f">Repuestos necesarios<input type="text" data-f="repuestos" value="${esc(m.repuestos)}"></label>
+        <label class="f">Tiempo estimado<input type="text" data-f="tiempo" value="${esc(m.tiempo)}" placeholder="Ej.: 2 días"></label>
+      </div>
+    </div>
+    <div class="bar actions" style="margin:12px 0 0">
+      <button class="btn sm" data-a="save">Guardar diagnóstico</button>
+      <button class="btn sec sm" data-a="print">Imprimir</button>
+      <button class="btn del sm" data-a="del">Eliminar</button>
+    </div>
+  </div></details>`;
+}
+
+$("#list").addEventListener("toggle",e=>{const d=e.target.closest("details");if(d)e.target.open?open.add(d.dataset.id):open.delete(d.dataset.id)},true);
+$("#list").addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const c=b.closest(".card"),o=orders.find(x=>x.id===c.dataset.id);
+  if(b.dataset.a==="save"){
+    const g=k=>c.querySelector(`[data-f=${k}]`).value.trim();
+    o.mec={nombre:g("nombre"),gravedad:g("gravedad"),coincide:g("coincide"),diag:g("diag"),repuestos:g("repuestos"),tiempo:g("tiempo"),
+      sistemas:[...c.querySelectorAll("[data-s]:checked")].map(x=>x.value),fecha:new Date().toISOString()};
+    o.estado=g("estado");DB.update(o);
+  }
+  if(b.dataset.a==="del"&&confirm(`¿Eliminar la orden de ${o.patente}? No se puede deshacer.`)){
+    DB.remove(o);
+  }
+  if(b.dataset.a==="print"){open.add(o.id);c.open=true;c.classList.add("print-me");window.print();c.classList.remove("print-me")}
+});
+["#fEst","#fGrav"].forEach(s=>$(s).onchange=render);$("#fQ").oninput=render;
+
+/* exportar */
+function download(name,text,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$("#bCsv").onclick=()=>{
+  const H=["N.º","Fecha","Tipo","Patente","Vehículo","Km","Chofer","Teléfono","Llegada","Gravedad (recepción)","Sistemas (chofer)","Síntomas","Dice el chofer","Estado","Mecánico","Gravedad real","Coincide","Sistemas reales","Diagnóstico","Repuestos","Tiempo estimado"];
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=orders.map(o=>{const m=o.mec||{};return [o.n,fmt(o.fecha),o.tipo,o.patente,o.vehiculo,o.km,o.chofer,o.tel,o.llegada,gname(o.gravedad),o.sistemas.join("; "),o.sintomas.join("; "),o.relato,o.estado,m.nombre,m.gravedad?gname(m.gravedad):"",m.coincide,(m.sistemas||[]).join("; "),m.diag,m.repuestos,m.tiempo].map(q).join(";")});
+  download("ordenes-taller.csv","\ufeff"+[H.map(q).join(";"),...rows].join("\r\n"),"text/csv;charset=utf-8");
+};
+$("#bBak").onclick=()=>download("copia-taller-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(orders),"application/json");
+$("#bRes").onclick=()=>$("#file").click();
+$("#file").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  f.text().then(t=>{
+    const data=JSON.parse(t);if(!Array.isArray(data))throw 0;
+    if(!confirm(`Se van a reemplazar las ${orders.length} órdenes actuales por ${data.length} de la copia. ¿Seguir?`))return;
+    DB.replace(data);
+  }).catch(()=>alert("El archivo no es una copia válida.")).finally(()=>e.target.value="");
+};
+
+/* sesión y sincronización */
+function gate(on){
+  $("nav").hidden=!on;$("#bOut").hidden=!(on&&CLOUD);$("#v-login").hidden=on;
+  if(!on){$("#v-new").hidden=true;$("#v-list").hidden=true}
+}
+function startCloud(){
+  firebase.initializeApp(CFG);db=firebase.firestore();const auth=firebase.auth();
+  gate(false);
+  $("#fLogin").addEventListener("submit",e=>{
+    e.preventDefault();$("#msg").textContent="";
+    auth.signInWithEmailAndPassword(e.target.email.value.trim(),e.target.pass.value)
+      .catch(()=>{$("#msg").textContent="Correo o contraseña incorrectos."});
+  });
+  $("#bOut").onclick=()=>auth.signOut();
+  auth.onAuthStateChanged(u=>{
+    if(unsub){unsub();unsub=null}
+    if(!u){orders=[];gate(false);return}
+    gate(true);show("new");
+    unsub=db.collection("ordenes").orderBy("fecha","desc").onSnapshot(s=>{
+      orders=s.docs.map(d=>d.data());
+      const a=document.activeElement;
+      if($("#list").contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return; /* no pisar lo que alguien está escribiendo */
+      render();
+    },err=>alert("No se pudieron leer las órdenes: "+err.message));
+  });
+}
+if(CLOUD)startCloud();
+else{try{orders=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){orders=[]}render()}
+</script>
+</body>
+</html>
