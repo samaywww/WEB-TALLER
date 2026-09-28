@@ -129,6 +129,10 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
   <fieldset>
     <legend>Sistema donde está la falla</legend>
     <div class="chips" id="sis"></div>
+    <div id="otroBox" hidden style="margin-top:12px">
+      <label class="f">¿A qué sistema se refiere?
+        <input type="text" name="sistemaOtro" maxlength="80" placeholder="Ej.: dirección hidráulica, aire acondicionado…"></label>
+    </div>
   </fieldset>
 
   <fieldset>
@@ -259,6 +263,7 @@ $("#form").addEventListener("submit",e=>{
     tipo:f.get("tipo"),patente:f.get("patente").trim().toUpperCase(),vehiculo:f.get("vehiculo").trim(),
     km:f.get("km"),chofer:f.get("chofer").trim(),tel:f.get("tel").trim(),llegada:f.get("llegada"),
     gravedad:f.get("gravedad"),sistemas:f.getAll("sistemas"),sintomas:f.getAll("sintomas"),
+    sistemaOtro:f.getAll("sistemas").includes("Otro")?(f.get("sistemaOtro")||"").trim():"",
     relato:f.get("relato").trim(),estado:"Pendiente",mec:null,nFotos:pend.length
   };
   const fotos=pend;cache.set(o.id,fotos.slice());
@@ -292,7 +297,15 @@ $("#fotos").onchange=async e=>{
   drawPrev();
 };
 $("#prev").onclick=e=>{const b=e.target.closest("[data-x]");if(b){pend.splice(+b.dataset.x,1);drawPrev()}};
-$("#form").addEventListener("reset",()=>{pend=[];drawPrev()});
+$("#form").addEventListener("reset",()=>{pend=[];drawPrev();setTimeout(syncOtro)});
+
+/* "Otro" sistema: pedir que lo aclare */
+function syncOtro(){
+  const on=[...document.querySelectorAll("#sis input")].some(i=>i.value==="Otro"&&i.checked);
+  $("#otroBox").hidden=!on;
+  if(!on)$("#otroBox input").value="";
+}
+$("#sis").addEventListener("change",syncOtro);
 
 /* listado */
 const open=new Set();
@@ -324,7 +337,7 @@ function hydrate(){
 }
 function card(o){
   const m=o.mec||{};
-  const sis=o.sistemas.join(", ")||"—",sint=o.sintomas.join(", ")||"—";
+  const sis=o.sistemas.map(x=>x==="Otro"&&o.sistemaOtro?"Otro: "+o.sistemaOtro:x).join(", ")||"—",sint=o.sintomas.join(", ")||"—";
   return `<details class="card s-${o.gravedad}" data-id="${o.id}" ${open.has(o.id)?"open":""}>
   <summary>
     <span class="pat">${esc(o.patente)}</span><span class="veh">${esc(o.tipo)}${o.vehiculo?" · "+esc(o.vehiculo):""}</span>
@@ -394,7 +407,7 @@ function download(name,text,type){
 $("#bCsv").onclick=()=>{
   const H=["N.º","Fecha","Tipo","Patente","Vehículo","Km","Chofer","Teléfono","Llegada","Gravedad (recepción)","Sistemas (chofer)","Síntomas","Dice el chofer","Estado","Mecánico","Gravedad real","Coincide","Sistemas reales","Ve el mecánico","Diagnóstico","Repuestos","Tiempo estimado"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const rows=orders.map(o=>{const m=o.mec||{};return [o.n,fmt(o.fecha),o.tipo,o.patente,o.vehiculo,o.km,o.chofer,o.tel,o.llegada,gname(o.gravedad),o.sistemas.join("; "),o.sintomas.join("; "),o.relato,o.estado,m.nombre,m.gravedad?gname(m.gravedad):"",m.coincide,(m.sistemas||[]).join("; "),m.visto,m.diag,m.repuestos,m.tiempo].map(q).join(";")});
+  const rows=orders.map(o=>{const m=o.mec||{};return [o.n,fmt(o.fecha),o.tipo,o.patente,o.vehiculo,o.km,o.chofer,o.tel,o.llegada,gname(o.gravedad),o.sistemas.map(x=>x==="Otro"&&o.sistemaOtro?"Otro: "+o.sistemaOtro:x).join("; "),o.sintomas.join("; "),o.relato,o.estado,m.nombre,m.gravedad?gname(m.gravedad):"",m.coincide,(m.sistemas||[]).join("; "),m.visto,m.diag,m.repuestos,m.tiempo].map(q).join(";")});
   download("ordenes-taller.csv","\ufeff"+[H.map(q).join(";"),...rows].join("\r\n"),"text/csv;charset=utf-8");
 };
 $("#bBak").onclick=()=>download("copia-taller-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(orders),"application/json");
