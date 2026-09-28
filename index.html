@@ -62,9 +62,18 @@ textarea{min-height:96px;resize:vertical}
 .k{color:var(--mut);font-size:.85rem}
 .mec{background:#f3f6f8;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
 .mec h3{margin-top:0}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.th{position:relative}
+.th img{width:96px;height:96px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:block}
+.th button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:var(--critica);color:#fff;font-size:1.1rem;line-height:1;cursor:pointer}
+.fotos{display:flex;flex-wrap:wrap;gap:8px}
+.fotos img{width:120px;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in}
+dialog{border:0;border-radius:8px;padding:12px;max-width:96vw}
+dialog img{display:block;max-width:100%;max-height:80vh;margin:0 auto 10px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
 .empty{text-align:center;color:var(--mut);padding:36px 10px}
 @media(max-width:560px){.meta{margin-left:0;width:100%}}
-@media print{header,.bar,.actions,.mec,.card:not(.print-me){display:none!important}body{background:#fffffffe}.card{border:1px solid #000}}
+@media print{header,.bar,.actions,.mec,.card:not(.print-me){display:none!important}body{background:#fff}.card{border:1px solid #000}}
 </style>
 </head>
 <body>
@@ -132,6 +141,13 @@ textarea{min-height:96px;resize:vertical}
     <textarea name="relato" placeholder="Qué escucha, cuándo pasa, qué cree que tiene…"></textarea>
   </fieldset>
 
+  <fieldset>
+    <legend>Fotos</legend>
+    <input type="file" id="fotos" accept="image/*" multiple aria-label="Agregar fotos">
+    <p class="k" style="margin:8px 0 0">Hasta 5 fotos. Se reducen solas para que no pesen.</p>
+    <div class="thumbs" id="prev"></div>
+  </fieldset>
+
   <button class="btn" type="submit">Guardar recepción</button>
   <button class="btn sec" type="reset" id="reset">Limpiar</button>
 </form>
@@ -153,6 +169,7 @@ textarea{min-height:96px;resize:vertical}
   <div id="list"></div>
 </section>
 </main>
+<dialog id="lb"><img id="lbImg" alt="Foto ampliada"><form method="dialog"><button class="btn sm">Cerrar</button></form></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -179,14 +196,29 @@ const CFG = {
   appId: "1:684549661795:web:5fbf75d1c14afa5e5e0456"
 };
 /* ======================================================================= */
-const CLOUD=CFG.apiKey!=="web-taller-a382c-b4829";
+const CLOUD=CFG.apiKey!=="PEGAR_AQUI";
 let orders=[],db=null,unsub=null;
+const cache=new Map(),loading=new Set();
 const fail=e=>alert("No se pudo guardar: "+(e.message||e));
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(orders))}catch(e){alert("No se pudo guardar en este navegador. Exportá una copia.")}};
 const DB=CLOUD?{
-  add:o=>db.collection("ordenes").doc(o.id).set(o).catch(fail),
+  add:(o,fotos=[])=>{
+    const ref=db.collection("ordenes").doc(o.id),b=db.batch();
+    b.set(ref,o);fotos.forEach((d,i)=>b.set(ref.collection("fotos").doc(String(i)),{i,data:d}));
+    return b.commit().catch(fail);
+  },
   update:o=>db.collection("ordenes").doc(o.id).set(o).catch(fail),
-  remove:o=>db.collection("ordenes").doc(o.id).delete().catch(fail),
+  async remove(o){
+    try{
+      const ref=db.collection("ordenes").doc(o.id),b=db.batch();
+      if(o.nFotos){const s=await ref.collection("fotos").get();s.docs.forEach(d=>b.delete(d.ref))}
+      b.delete(ref);await b.commit();cache.delete(o.id);
+    }catch(e){fail(e)}
+  },
+  async photos(o){
+    const s=await db.collection("ordenes").doc(o.id).collection("fotos").orderBy("i").get();
+    return s.docs.map(d=>d.data().data);
+  },
   async replace(list){
     try{
       const old=await db.collection("ordenes").get();
@@ -195,7 +227,8 @@ const DB=CLOUD?{
     }catch(e){fail(e)}
   }
 }:{
-  add:o=>{orders.unshift(o);persist();render()},
+  add:(o,fotos=[])=>{o.fotos=fotos;orders.unshift(o);persist();render()},
+  photos:o=>Promise.resolve(o.fotos||[]),
   update:()=>{persist();render()},
   remove:o=>{orders=orders.filter(x=>x!==o);persist();render()},
   replace:l=>{orders=l;persist();render()}
@@ -226,10 +259,40 @@ $("#form").addEventListener("submit",e=>{
     tipo:f.get("tipo"),patente:f.get("patente").trim().toUpperCase(),vehiculo:f.get("vehiculo").trim(),
     km:f.get("km"),chofer:f.get("chofer").trim(),tel:f.get("tel").trim(),llegada:f.get("llegada"),
     gravedad:f.get("gravedad"),sistemas:f.getAll("sistemas"),sintomas:f.getAll("sintomas"),
-    relato:f.get("relato").trim(),estado:"Pendiente",mec:null
+    relato:f.get("relato").trim(),estado:"Pendiente",mec:null,nFotos:pend.length
   };
-  open.add(o.id);DB.add(o);e.target.reset();show("list");
+  const fotos=pend;cache.set(o.id,fotos.slice());
+  open.add(o.id);DB.add(o,fotos);e.target.reset();show("list");
 });
+
+/* fotos de la recepción */
+const MAXF=5;let pend=[];
+function shrink(file){
+  return new Promise((ok,no)=>{
+    const img=new Image(),u=URL.createObjectURL(file);
+    img.onload=()=>{
+      const k=Math.min(1,1000/Math.max(img.width,img.height));
+      const c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(u);ok(c.toDataURL("image/jpeg",.6));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(u);no()};
+    img.src=u;
+  });
+}
+function drawPrev(){
+  $("#prev").innerHTML=pend.map((s,i)=>`<div class="th"><img src="${s}" alt="Foto ${i+1}"><button type="button" data-x="${i}" aria-label="Quitar foto ${i+1}">×</button></div>`).join("");
+}
+$("#fotos").onchange=async e=>{
+  const files=[...e.target.files];e.target.value="";
+  for(const f of files){
+    if(pend.length>=MAXF){alert("Máximo "+MAXF+" fotos por orden.");break}
+    try{pend.push(await shrink(f))}catch(err){alert("No se pudo leer una de las imágenes.")}
+  }
+  drawPrev();
+};
+$("#prev").onclick=e=>{const b=e.target.closest("[data-x]");if(b){pend.splice(+b.dataset.x,1);drawPrev()}};
+$("#form").addEventListener("reset",()=>{pend=[];drawPrev()});
 
 /* listado */
 const open=new Set();
@@ -239,6 +302,25 @@ function render(){
   const rows=orders.filter(o=>(!st||o.estado===st)&&(!gr||o.gravedad===gr)&&
     (!q||[o.patente,o.chofer,o.vehiculo].join(" ").toLowerCase().includes(q)));
   $("#list").innerHTML=rows.length?rows.map(card).join(""):`<p class="empty">${orders.length?"Ninguna orden coincide con el filtro.":"Todavía no hay órdenes. Cargá la primera en Recepción."}</p>`;
+  hydrate();
+}
+const nF=o=>o.nFotos||(o.fotos||[]).length;
+function fotosInner(o){
+  const a=cache.get(o.id);
+  if(a===undefined)return '<p class="k">Cargando fotos…</p>';
+  if(!a.length)return '<p class="k">No se pudieron cargar las fotos.</p>';
+  return a.map(src=>`<img src="${src}" alt="Foto de la recepción">`).join("");
+}
+function hydrate(){
+  document.querySelectorAll(".card[open]").forEach(c=>{
+    const o=orders.find(x=>x.id===c.dataset.id);
+    if(!o||!nF(o)||cache.has(o.id)||loading.has(o.id))return;
+    loading.add(o.id);
+    DB.photos(o).catch(()=>[]).then(a=>{
+      cache.set(o.id,a);loading.delete(o.id);
+      const d=document.querySelector(`.card[data-id="${o.id}"] .fotos`);if(d)d.innerHTML=fotosInner(o);
+    });
+  });
 }
 function card(o){
   const m=o.mec||{};
@@ -255,9 +337,11 @@ function card(o){
     <p><span class="k">Sistema:</span> ${esc(sis)}</p>
     <p><span class="k">Se nota:</span> ${esc(sint)}</p>
     <p><span class="k">Dice el chofer:</span> ${esc(o.relato)||"—"}</p>
+    ${nF(o)?`<h3>Fotos (${nF(o)})</h3><div class="fotos">${fotosInner(o)}</div>`:""}
     ${o.mec?`<h3>Diagnóstico del mecánico</h3>
     <p><span class="k">Mecánico:</span> ${esc(m.nombre)||"—"} &nbsp; <span class="k">Gravedad real:</span> ${gname(m.gravedad)} &nbsp; <span class="k">Coincide con el chofer:</span> ${esc(m.coincide)||"—"}</p>
     <p><span class="k">Sistema afectado:</span> ${esc((m.sistemas||[]).join(", "))||"—"}</p>
+    <p><span class="k">Lo que ve el mecánico:</span> ${esc(m.visto)||"—"}</p>
     <p><span class="k">Diagnóstico:</span> ${esc(m.diag)||"—"}</p>
     <p><span class="k">Repuestos:</span> ${esc(m.repuestos)||"—"} &nbsp; <span class="k">Tiempo estimado:</span> ${esc(m.tiempo)||"—"}</p>`:""}
     <div class="mec">
@@ -270,6 +354,7 @@ function card(o){
       </div>
       <p class="k" style="margin:12px 0 6px">Sistema afectado (real)</p>
       <div class="chips">${SIS.map(s=>`<label class="chip"><input type="checkbox" data-s value="${esc(s)}" ${(m.sistemas||[]).includes(s)?"checked":""}><span>${esc(s)}</span></label>`).join("")}</div>
+      <label class="f" style="margin-top:12px">Lo que ve el mecánico<textarea data-f="visto" placeholder="Qué encuentra al revisar: pérdidas, desgaste, piezas dañadas, códigos de falla…">${esc(m.visto)}</textarea></label>
       <label class="f" style="margin-top:12px">Diagnóstico<textarea data-f="diag">${esc(m.diag)}</textarea></label>
       <div class="grid" style="margin-top:12px">
         <label class="f">Repuestos necesarios<input type="text" data-f="repuestos" value="${esc(m.repuestos)}"></label>
@@ -284,13 +369,14 @@ function card(o){
   </div></details>`;
 }
 
-$("#list").addEventListener("toggle",e=>{const d=e.target.closest("details");if(d)e.target.open?open.add(d.dataset.id):open.delete(d.dataset.id)},true);
+$("#list").addEventListener("toggle",e=>{const d=e.target.closest("details");if(d)e.target.open?open.add(d.dataset.id):open.delete(d.dataset.id);hydrate()},true);
 $("#list").addEventListener("click",e=>{
+  const im=e.target.closest(".fotos img");if(im){$("#lbImg").src=im.src;$("#lb").showModal();return}
   const b=e.target.closest("[data-a]");if(!b)return;
   const c=b.closest(".card"),o=orders.find(x=>x.id===c.dataset.id);
   if(b.dataset.a==="save"){
     const g=k=>c.querySelector(`[data-f=${k}]`).value.trim();
-    o.mec={nombre:g("nombre"),gravedad:g("gravedad"),coincide:g("coincide"),diag:g("diag"),repuestos:g("repuestos"),tiempo:g("tiempo"),
+    o.mec={nombre:g("nombre"),gravedad:g("gravedad"),coincide:g("coincide"),visto:g("visto"),diag:g("diag"),repuestos:g("repuestos"),tiempo:g("tiempo"),
       sistemas:[...c.querySelectorAll("[data-s]:checked")].map(x=>x.value),fecha:new Date().toISOString()};
     o.estado=g("estado");DB.update(o);
   }
@@ -306,9 +392,9 @@ function download(name,text,type){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 $("#bCsv").onclick=()=>{
-  const H=["N.º","Fecha","Tipo","Patente","Vehículo","Km","Chofer","Teléfono","Llegada","Gravedad (recepción)","Sistemas (chofer)","Síntomas","Dice el chofer","Estado","Mecánico","Gravedad real","Coincide","Sistemas reales","Diagnóstico","Repuestos","Tiempo estimado"];
+  const H=["N.º","Fecha","Tipo","Patente","Vehículo","Km","Chofer","Teléfono","Llegada","Gravedad (recepción)","Sistemas (chofer)","Síntomas","Dice el chofer","Estado","Mecánico","Gravedad real","Coincide","Sistemas reales","Ve el mecánico","Diagnóstico","Repuestos","Tiempo estimado"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const rows=orders.map(o=>{const m=o.mec||{};return [o.n,fmt(o.fecha),o.tipo,o.patente,o.vehiculo,o.km,o.chofer,o.tel,o.llegada,gname(o.gravedad),o.sistemas.join("; "),o.sintomas.join("; "),o.relato,o.estado,m.nombre,m.gravedad?gname(m.gravedad):"",m.coincide,(m.sistemas||[]).join("; "),m.diag,m.repuestos,m.tiempo].map(q).join(";")});
+  const rows=orders.map(o=>{const m=o.mec||{};return [o.n,fmt(o.fecha),o.tipo,o.patente,o.vehiculo,o.km,o.chofer,o.tel,o.llegada,gname(o.gravedad),o.sistemas.join("; "),o.sintomas.join("; "),o.relato,o.estado,m.nombre,m.gravedad?gname(m.gravedad):"",m.coincide,(m.sistemas||[]).join("; "),m.visto,m.diag,m.repuestos,m.tiempo].map(q).join(";")});
   download("ordenes-taller.csv","\ufeff"+[H.map(q).join(";"),...rows].join("\r\n"),"text/csv;charset=utf-8");
 };
 $("#bBak").onclick=()=>download("copia-taller-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(orders),"application/json");
