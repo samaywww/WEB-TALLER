@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Taller · Repuestos</title>
+<style>
+:root{--bg:#e6eaed;--panel:#fff;--ink:#1b252d;--mut:#586570;--line:#c6cfd6;--acc:#0e4a6b;--acc2:#e8f1f6;--bad:#991b1b;--ok:#1d5c37}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+header{background:var(--ink);color:#fff;padding:14px 16px 0}
+.top{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
+header h1{margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.2px}
+nav[hidden]{display:none}
+#msg{color:#ffb4b4;font-weight:600;min-height:1.4em;margin:10px 0 0}
+nav{max-width:960px;margin:10px auto 0;display:flex;gap:4px}
+nav button{flex:1;max-width:220px;border:0;background:#33424d;color:#dfe6eb;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0}
+nav button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+main{max-width:960px;margin:0 auto;padding:16px}
+section[hidden]{display:none}
+fieldset{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin:0 0 14px;padding:14px 16px 16px}
+legend{font-weight:700;padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--mut);font-weight:600}
+input[type=text],input[type=number],input[type=email],input[type=password],select{font:inherit;color:var(--ink);padding:9px 10px;border:1px solid #9aa7b1;border-radius:6px;background:#fff;width:100%}
+:focus-visible{outline:3px solid #f0a500;outline-offset:1px}
+.btn{font:inherit;font-weight:700;border:0;border-radius:6px;padding:11px 18px;background:var(--acc);color:#fff;cursor:pointer}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid #9aa7b1;font-weight:600}
+.btn.del{background:#fff;color:var(--bad);border:1px solid var(--bad);font-weight:600}
+.btn.sm{padding:7px 12px;font-size:.9rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bar select,.bar input{width:auto;flex:1;min-width:160px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.chip span{display:inline-block;padding:7px 12px;border:1px solid #9aa7b1;border-radius:20px;background:#fff;font-size:.9rem}
+.chip input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip input:focus-visible+span{outline:3px solid #f0a500;outline-offset:1px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:.95rem}
+th{background:#f3f6f8;color:var(--mut);font-size:.82rem;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.low{color:var(--bad);font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--acc2);color:var(--acc)}
+.empty{text-align:center;color:var(--mut);padding:36px 10px}
+.mlist{display:flex;flex-wrap:wrap;gap:8px}
+.mrow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.mrow b{flex:1}
+dialog{border:0;border-radius:8px;padding:18px;max-width:480px;width:92vw}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{margin:0 0 12px;font-size:1.1rem}
+@media(max-width:560px){table,thead,tbody,th,td,tr{display:block}thead{display:none}
+  tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:8px 12px;background:var(--panel)}
+  td{border:0;padding:5px 0;display:flex;justify-content:space-between;gap:10px}
+  td::before{content:attr(data-l);color:var(--mut);font-size:.8rem;font-weight:600}
+  td.num{text-align:right}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Taller · Repuestos</h1><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
+  <nav role="tablist">
+    <button role="tab" id="t-list" aria-selected="true">Repuestos</button>
+    <button role="tab" id="t-marcas" aria-selected="false">Marcas</button>
+  </nav>
+</header>
+
+<main>
+<!-- INGRESO -->
+<section id="v-login" hidden>
+<form id="fLogin"><fieldset><legend>Ingresar</legend>
+  <div class="grid">
+    <label class="f">Correo<input type="email" name="email" required autocomplete="username"></label>
+    <label class="f">Contraseña<input type="password" name="pass" required autocomplete="current-password"></label>
+  </div>
+  <p id="msg" role="alert"></p>
+  <button class="btn" type="submit">Ingresar</button>
+</fieldset></form>
+</section>
+
+<!-- REPUESTOS -->
+<section id="v-list" hidden>
+  <div class="bar">
+    <select id="fMarca" aria-label="Filtrar por marca"><option value="">Todas las marcas</option></select>
+    <input type="text" id="fQ" placeholder="Buscar repuesto…" aria-label="Buscar">
+    <button class="btn sm" id="bNuevo">Agregar repuesto</button>
+  </div>
+  <table id="tabla">
+    <thead><tr><th>Repuesto</th><th>Marcas</th><th>Stock</th><th>Precio</th><th></th></tr></thead>
+    <tbody id="filas"></tbody>
+  </table>
+  <p class="empty" id="vacio" hidden></p>
+</section>
+
+<!-- MARCAS -->
+<section id="v-marcas" hidden>
+  <fieldset>
+    <legend>Agregar marca</legend>
+    <form id="fMarcaNueva" class="bar" style="margin:0">
+      <input type="text" name="nombre" placeholder="Ej.: Ford" maxlength="40" required style="flex:2;min-width:180px">
+      <button class="btn sm" type="submit">Agregar</button>
+    </form>
+  </fieldset>
+  <div class="mlist" id="marcasList"></div>
+</section>
+
+<!-- MODAL: agregar/editar repuesto -->
+<dialog id="dlg">
+  <h2 id="dlgTitulo">Agregar repuesto</h2>
+  <form id="fRepuesto">
+    <input type="hidden" name="id">
+    <div class="grid">
+      <label class="f">Nombre<input type="text" name="nombre" required maxlength="80"></label>
+      <label class="f">Stock<input type="number" name="stock" min="0" step="1" value="0"></label>
+      <label class="f">Precio<input type="number" name="precio" min="0" step="0.01" placeholder="0.00"></label>
+    </div>
+    <p class="f" style="margin:14px 0 6px">¿Para qué marcas sirve?</p>
+    <div class="chips" id="dlgMarcas"></div>
+    <p id="dlgMsg" style="color:var(--bad);font-weight:600;min-height:1.3em;margin:10px 0 0"></p>
+    <div class="bar" style="margin-top:16px">
+      <button class="btn" type="submit">Guardar</button>
+      <button class="btn sec" type="button" id="dlgCancel">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ====== Mismo proyecto de Firebase que la web del taller ====== */
+const CFG = {
+  apiKey: "AIzaSyCXmPtLcV19_InMZMDeLVoivJhp_uzvHEE",
+  authDomain: "web-taller-a382c.firebaseapp.com",
+  projectId: "web-taller-a382c",
+  storageBucket: "web-taller-a382c.firebasestorage.app",
+  messagingSenderId: "684549661795",
+  appId: "1:684549661795:web:5fbf75d1c14afa5e5e0456"
+};
+/* ================================================================ */
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>n==null||n===""?"—":"$"+Number(n).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+let db=null,marcas=[],repuestos=[],unsubM=null,unsubR=null;
+const fail=e=>alert("No se pudo guardar: "+(e.message||e));
+
+/* pestañas */
+function show(tab){
+  $("#v-list").hidden=tab!=="list";$("#v-marcas").hidden=tab!=="marcas";
+  $("#t-list").setAttribute("aria-selected",tab==="list");$("#t-marcas").setAttribute("aria-selected",tab==="marcas");
+}
+$("#t-list").onclick=()=>show("list");$("#t-marcas").onclick=()=>show("marcas");
+
+/* ---------- MARCAS ---------- */
+function renderMarcas(){
+  $("#fMarca").innerHTML='<option value="">Todas las marcas</option>'+
+    marcas.map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join("");
+  $("#marcasList").innerHTML=marcas.length?marcas.map(m=>`
+    <div class="mrow"><b>${esc(m.nombre)}</b>
+      <span class="k" style="color:var(--mut);font-size:.85rem">${repuestos.filter(r=>(r.marcas||[]).includes(m.id)).length} repuesto(s)</span>
+      <button class="btn del sm" data-del-marca="${m.id}">Eliminar</button>
+    </div>`).join(""):'<p class="empty">Todavía no cargaste marcas.</p>';
+  renderDlgMarcas();renderTabla();
+}
+$("#fMarcaNueva").addEventListener("submit",e=>{
+  e.preventDefault();
+  const nombre=e.target.nombre.value.trim();if(!nombre)return;
+  if(marcas.some(m=>m.nombre.toLowerCase()===nombre.toLowerCase())){alert("Esa marca ya existe.");return}
+  db.collection("marcas").add({nombre}).then(()=>e.target.reset()).catch(fail);
+});
+$("#marcasList").addEventListener("click",e=>{
+  const b=e.target.closest("[data-del-marca]");if(!b)return;
+  const id=b.dataset.delMarca,m=marcas.find(x=>x.id===id);
+  const enUso=repuestos.filter(r=>(r.marcas||[]).includes(id));
+  const aviso=enUso.length?`Se usa en ${enUso.length} repuesto(s); se les va a quitar esta marca. `:"";
+  if(!confirm(`${aviso}¿Eliminar la marca "${m.nombre}"?`))return;
+  const batch=db.batch();
+  batch.delete(db.collection("marcas").doc(id));
+  enUso.forEach(r=>batch.update(db.collection("repuestos").doc(r.id),{marcas:r.marcas.filter(x=>x!==id)}));
+  batch.commit().catch(fail);
+});
+
+/* ---------- REPUESTOS: tabla ---------- */
+function renderTabla(){
+  const marcaId=$("#fMarca").value,q=$("#fQ").value.trim().toLowerCase();
+  const rows=repuestos.filter(r=>(!marcaId||(r.marcas||[]).includes(marcaId))&&(!q||r.nombre.toLowerCase().includes(q)));
+  $("#filas").innerHTML=rows.map(r=>{
+    const nombresMarcas=(r.marcas||[]).map(id=>marcas.find(m=>m.id===id)?.nombre).filter(Boolean);
+    const bajo=r.stock!=null&&r.stock<=2;
+    return `<tr data-id="${r.id}">
+      <td data-l="Repuesto">${esc(r.nombre)}</td>
+      <td data-l="Marcas"><span class="tags">${nombresMarcas.map(n=>`<span class="tag">${esc(n)}</span>`).join("")||"—"}</span></td>
+      <td data-l="Stock" class="num ${bajo?"low":""}">${r.stock??"—"}</td>
+      <td data-l="Precio" class="num">${money(r.precio)}</td>
+      <td data-l=""><button class="btn sec sm" data-edit="${r.id}">Editar</button> <button class="btn del sm" data-del="${r.id}">Eliminar</button></td>
+    </tr>`;
+  }).join("");
+  $("#vacio").hidden=rows.length>0;
+  $("#vacio").textContent=repuestos.length?"Ningún repuesto coincide con el filtro.":"Todavía no cargaste repuestos.";
+}
+$("#fMarca").onchange=renderTabla;$("#fQ").oninput=renderTabla;
+
+/* ---------- modal alta/edición ---------- */
+function renderDlgMarcas(sel=[]){
+  $("#dlgMarcas").innerHTML=marcas.length?marcas.map(m=>`
+    <label class="chip"><input type="checkbox" name="marcas" value="${m.id}" ${sel.includes(m.id)?"checked":""}><span>${esc(m.nombre)}</span></label>`).join("")
+    :'<p class="k" style="color:var(--mut)">Cargá al menos una marca en la pestaña Marcas.</p>';
+}
+function openDlg(r){
+  const f=$("#fRepuesto");f.reset();$("#dlgMsg").textContent="";
+  $("#dlgTitulo").textContent=r?"Editar repuesto":"Agregar repuesto";
+  f.id.value=r?r.id:"";
+  f.nombre.value=r?r.nombre:"";
+  f.stock.value=r?(r.stock??0):0;
+  f.precio.value=r&&r.precio!=null?r.precio:"";
+  renderDlgMarcas(r?(r.marcas||[]):[]);
+  $("#dlg").showModal();
+}
+$("#bNuevo").onclick=()=>openDlg(null);
+$("#dlgCancel").onclick=()=>$("#dlg").close();
+$("#fRepuesto").addEventListener("submit",e=>{
+  e.preventDefault();
+  const f=new FormData(e.target),id=f.get("id"),marcasSel=f.getAll("marcas");
+  const nombre=f.get("nombre").trim();
+  if(!nombre){$("#dlgMsg").textContent="Escribí el nombre del repuesto.";return}
+  const data={nombre,stock:f.get("stock")===""?null:Number(f.get("stock")),
+    precio:f.get("precio")===""?null:Number(f.get("precio")),marcas:marcasSel};
+  const p=id?db.collection("repuestos").doc(id).set(data):db.collection("repuestos").add(data);
+  p.then(()=>$("#dlg").close()).catch(fail);
+});
+$("#filas").addEventListener("click",e=>{
+  const ed=e.target.closest("[data-edit]");if(ed){openDlg(repuestos.find(r=>r.id===ed.dataset.edit));return}
+  const de=e.target.closest("[data-del]");if(de){
+    const r=repuestos.find(x=>x.id===de.dataset.del);
+    if(confirm(`¿Eliminar "${r.nombre}"?`))db.collection("repuestos").doc(r.id).delete().catch(fail);
+  }
+});
+
+/* ---------- sesión y sincronización ---------- */
+function gate(on){
+  $("nav").hidden=!on;$("#bOut").hidden=!on;$("#v-login").hidden=on;
+  if(!on){$("#v-list").hidden=true;$("#v-marcas").hidden=true}
+}
+firebase.initializeApp(CFG);db=firebase.firestore();const auth=firebase.auth();
+gate(false);
+$("#fLogin").addEventListener("submit",e=>{
+  e.preventDefault();$("#msg").textContent="";
+  auth.signInWithEmailAndPassword(e.target.email.value.trim(),e.target.pass.value)
+    .catch(()=>{$("#msg").textContent="Correo o contraseña incorrectos."});
+});
+$("#bOut").onclick=()=>auth.signOut();
+auth.onAuthStateChanged(u=>{
+  if(unsubM){unsubM();unsubM=null}if(unsubR){unsubR();unsubR=null}
+  if(!u){marcas=[];repuestos=[];gate(false);return}
+  gate(true);show("list");
+  unsubM=db.collection("marcas").orderBy("nombre").onSnapshot(s=>{marcas=s.docs.map(d=>({id:d.id,...d.data()}));renderMarcas()},err=>alert("No se pudieron leer las marcas: "+err.message));
+  unsubR=db.collection("repuestos").orderBy("nombre").onSnapshot(s=>{repuestos=s.docs.map(d=>({id:d.id,...d.data()}));renderMarcas();renderTabla()},err=>alert("No se pudieron leer los repuestos: "+err.message));
+});
+</script>
+</body>
+</html>
