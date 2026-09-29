@@ -89,7 +89,7 @@ dialog h2{margin:0 0 12px;font-size:1.1rem}
     <button class="btn sm" id="bNuevo">Agregar repuesto</button>
   </div>
   <table id="tabla">
-    <thead><tr><th>Repuesto</th><th>Marcas</th><th>Stock</th><th>Precio</th><th></th></tr></thead>
+    <thead><tr><th>Código</th><th>Repuesto</th><th>Marcas</th><th>Stock</th><th>Precio</th><th></th></tr></thead>
     <tbody id="filas"></tbody>
   </table>
   <p class="empty" id="vacio" hidden></p>
@@ -113,6 +113,7 @@ dialog h2{margin:0 0 12px;font-size:1.1rem}
   <form id="fRepuesto">
     <input type="hidden" name="id">
     <div class="grid">
+      <label class="f">Código<input type="text" name="codigo" maxlength="40" placeholder="Ej.: 04-1123"></label>
       <label class="f">Nombre<input type="text" name="nombre" required maxlength="80"></label>
       <label class="f">Stock<input type="number" name="stock" min="0" step="1" value="0"></label>
       <label class="f">Precio<input type="number" name="precio" min="0" step="0.01" placeholder="0.00"></label>
@@ -188,11 +189,12 @@ $("#marcasList").addEventListener("click",e=>{
 /* ---------- REPUESTOS: tabla ---------- */
 function renderTabla(){
   const marcaId=$("#fMarca").value,q=$("#fQ").value.trim().toLowerCase();
-  const rows=repuestos.filter(r=>(!marcaId||(r.marcas||[]).includes(marcaId))&&(!q||r.nombre.toLowerCase().includes(q)));
+  const rows=repuestos.filter(r=>(!marcaId||(r.marcas||[]).includes(marcaId))&&(!q||r.nombre.toLowerCase().includes(q)||(r.codigo||"").toLowerCase().includes(q)));
   $("#filas").innerHTML=rows.map(r=>{
     const nombresMarcas=(r.marcas||[]).map(id=>marcas.find(m=>m.id===id)?.nombre).filter(Boolean);
     const bajo=r.stock!=null&&r.stock<=2;
     return `<tr data-id="${r.id}">
+      <td data-l="Código">${esc(r.codigo)||"—"}</td>
       <td data-l="Repuesto">${esc(r.nombre)}</td>
       <td data-l="Marcas"><span class="tags">${nombresMarcas.map(n=>`<span class="tag">${esc(n)}</span>`).join("")||"—"}</span></td>
       <td data-l="Stock" class="num ${bajo?"low":""}">${r.stock??"—"}</td>
@@ -215,6 +217,7 @@ function openDlg(r){
   const f=$("#fRepuesto");f.reset();$("#dlgMsg").textContent="";
   $("#dlgTitulo").textContent=r?"Editar repuesto":"Agregar repuesto";
   f.id.value=r?r.id:"";
+  f.codigo.value=r?(r.codigo||""):"";
   f.nombre.value=r?r.nombre:"";
   f.stock.value=r?(r.stock??0):0;
   f.precio.value=r&&r.precio!=null?r.precio:"";
@@ -228,7 +231,7 @@ $("#fRepuesto").addEventListener("submit",e=>{
   const f=new FormData(e.target),id=f.get("id"),marcasSel=f.getAll("marcas");
   const nombre=f.get("nombre").trim();
   if(!nombre){$("#dlgMsg").textContent="Escribí el nombre del repuesto.";return}
-  const data={nombre,stock:f.get("stock")===""?null:Number(f.get("stock")),
+  const data={codigo:f.get("codigo").trim(),nombre,stock:f.get("stock")===""?null:Number(f.get("stock")),
     precio:f.get("precio")===""?null:Number(f.get("precio")),marcas:marcasSel};
   const p=id?db.collection("repuestos").doc(id).set(data):db.collection("repuestos").add(data);
   p.then(()=>$("#dlg").close()).catch(fail);
