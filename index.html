@@ -78,7 +78,7 @@ dialog::backdrop{background:rgba(0,0,0,.7)}
 </head>
 <body>
 <header>
-  <div class="top"><h1>Taller · Registro de fallas</h1><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
+  <div class="top"><h1>Taller · Registro de fallas</h1><a class="btn sec sm" href="repuestos.html" id="bLink" hidden>Repuestos</a><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
   <nav role="tablist">
     <button role="tab" id="t-new" aria-selected="true">Recepción</button>
     <button role="tab" id="t-list" aria-selected="false">Órdenes <span id="cnt"></span></button>
@@ -423,7 +423,7 @@ $("#file").onchange=e=>{
 
 /* sesión y sincronización */
 function gate(on){
-  $("nav").hidden=!on;$("#bOut").hidden=!(on&&CLOUD);$("#v-login").hidden=on;
+  $("nav").hidden=!on;$("#bOut").hidden=!(on&&CLOUD);$("#bLink").hidden=!on;$("#v-login").hidden=on;
   if(!on){$("#v-new").hidden=true;$("#v-list").hidden=true}
 }
 function startCloud(){

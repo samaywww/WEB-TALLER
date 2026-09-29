@@ -61,7 +61,7 @@ dialog h2{margin:0 0 12px;font-size:1.1rem}
 </head>
 <body>
 <header>
-  <div class="top"><h1>Taller · Repuestos</h1><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
+  <div class="top"><h1>Taller · Repuestos</h1><a class="btn sec sm" href="index.html" id="bLink" hidden>Fallas</a><button class="btn sec sm" id="bOut" hidden>Cerrar sesión</button></div>
   <nav role="tablist">
     <button role="tab" id="t-list" aria-selected="true">Repuestos</button>
     <button role="tab" id="t-marcas" aria-selected="false">Marcas</button>
@@ -243,7 +243,7 @@ $("#filas").addEventListener("click",e=>{
 
 /* ---------- sesión y sincronización ---------- */
 function gate(on){
-  $("nav").hidden=!on;$("#bOut").hidden=!on;$("#v-login").hidden=on;
+  $("nav").hidden=!on;$("#bOut").hidden=!on;$("#bLink").hidden=!on;$("#v-login").hidden=on;
   if(!on){$("#v-list").hidden=true;$("#v-marcas").hidden=true}
 }
 firebase.initializeApp(CFG);db=firebase.firestore();const auth=firebase.auth();
