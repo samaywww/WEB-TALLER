@@ -42,6 +42,11 @@ th{background:#f3f6f8;color:var(--mut);font-size:.82rem;text-transform:uppercase
 tr:last-child td{border-bottom:0}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 .low{color:var(--bad);font-weight:700}
+.stk{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+.stk button{width:26px;height:26px;border-radius:6px;border:1px solid #9aa7b1;background:#fff;color:var(--ink);font-weight:700;font-size:1rem;line-height:1;cursor:pointer;padding:0}
+.stk input{width:56px;padding:5px 4px;text-align:center;-moz-appearance:textfield;appearance:textfield}
+.stk input::-webkit-outer-spin-button,.stk input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+@media(max-width:560px){.stk{justify-content:flex-end}}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
 .tag{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--acc2);color:var(--acc)}
 .empty{text-align:center;color:var(--mut);padding:36px 10px}
@@ -188,6 +193,8 @@ $("#marcasList").addEventListener("click",e=>{
 
 /* ---------- REPUESTOS: tabla ---------- */
 function renderTabla(){
+  const a=document.activeElement;
+  if(a&&a.matches("[data-stk-input]")&&$("#filas").contains(a))return;
   const marcaId=$("#fMarca").value,q=$("#fQ").value.trim().toLowerCase();
   const rows=repuestos.filter(r=>(!marcaId||(r.marcas||[]).includes(marcaId))&&(!q||r.nombre.toLowerCase().includes(q)||(r.codigo||"").toLowerCase().includes(q)));
   $("#filas").innerHTML=rows.map(r=>{
@@ -197,7 +204,13 @@ function renderTabla(){
       <td data-l="Código">${esc(r.codigo)||"—"}</td>
       <td data-l="Repuesto">${esc(r.nombre)}</td>
       <td data-l="Marcas"><span class="tags">${nombresMarcas.map(n=>`<span class="tag">${esc(n)}</span>`).join("")||"—"}</span></td>
-      <td data-l="Stock" class="num ${bajo?"low":""}">${r.stock??"—"}</td>
+      <td data-l="Stock" class="num ${bajo?"low":""}">
+        <span class="stk">
+          <button type="button" data-stk-dec="${r.id}" aria-label="Restar 1">−</button>
+          <input type="number" min="0" step="1" data-stk-input="${r.id}" value="${r.stock??0}" aria-label="Stock">
+          <button type="button" data-stk-inc="${r.id}" aria-label="Sumar 1">+</button>
+        </span>
+      </td>
       <td data-l="Precio" class="num">${money(r.precio)}</td>
       <td data-l=""><button class="btn sec sm" data-edit="${r.id}">Editar</button> <button class="btn del sm" data-del="${r.id}">Eliminar</button></td>
     </tr>`;
@@ -241,7 +254,28 @@ $("#filas").addEventListener("click",e=>{
   const de=e.target.closest("[data-del]");if(de){
     const r=repuestos.find(x=>x.id===de.dataset.del);
     if(confirm(`¿Eliminar "${r.nombre}"?`))db.collection("repuestos").doc(r.id).delete().catch(fail);
+    return;
   }
+  const inc=e.target.closest("[data-stk-inc]"),dec=e.target.closest("[data-stk-dec]");
+  if(inc||dec){
+    const id=(inc||dec).dataset.stkInc||(inc||dec).dataset.stkDec;
+    const r=repuestos.find(x=>x.id===id);const actual=Number(r.stock)||0;
+    const nuevo=Math.max(0,actual+(inc?1:-1));
+    db.collection("repuestos").doc(id).update({stock:nuevo}).catch(fail);
+  }
+});
+function guardarStock(id,input){
+  const r=repuestos.find(x=>x.id===id);if(!r)return;
+  let v=input.value===""?0:Math.max(0,Math.round(Number(input.value)));
+  if(isNaN(v))v=0;
+  if(v===(Number(r.stock)||0))return;
+  db.collection("repuestos").doc(id).update({stock:v}).catch(fail);
+}
+$("#filas").addEventListener("change",e=>{
+  const inp=e.target.closest("[data-stk-input]");if(inp)guardarStock(inp.dataset.stkInput,inp);
+});
+$("#filas").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.matches("[data-stk-input]")){e.preventDefault();e.target.blur()}
 });
 
 /* ---------- sesión y sincronización ---------- */
